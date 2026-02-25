@@ -2,18 +2,17 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Sparkle, Info, ArrowUpRight, BookOpen, Quotes } from "@phosphor-icons/react";
+import { Sparkle, Info, ArrowUpRight, BookOpen, Quotes, Bookmark } from "@phosphor-icons/react";
 import { cleanHtml, truncate } from "@/lib/utils";
 import Image from "next/image";
 import { type BookRecommendation } from "@/app/actions";
 import { cn } from "@/lib/utils";
-
 import { useLuminaStore } from "@/lib/store";
 
 export function BookCard({ book, delay = 0 }: { book: BookRecommendation; delay?: number }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const cleanDescription = cleanHtml(book.description);
-  const { favorites, addFavorite, removeFavorite, isFavorite } = useLuminaStore();
+  const { addFavorite, removeFavorite, isFavorite } = useLuminaStore();
   
   const isSaved = book.googleBooksId ? isFavorite(book.googleBooksId) : false;
 
@@ -27,12 +26,14 @@ export function BookCard({ book, delay = 0 }: { book: BookRecommendation; delay?
     }
   };
 
+  const handleCardClick = () => {
+    setIsFlipped(!isFlipped);
+  };
+
   return (
     <div 
       className="group perspective-1000 h-[500px] w-full"
-      onMouseEnter={() => setIsFlipped(true)}
-      onMouseLeave={() => setIsFlipped(false)}
-      onClick={() => setIsFlipped(!isFlipped)}
+      onClick={handleCardClick}
     >
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -58,13 +59,13 @@ export function BookCard({ book, delay = 0 }: { book: BookRecommendation; delay?
           }}
         >
           {/* Cover Image */}
-          <div className="relative h-[65%] w-full bg-[#F5F2ED] overflow-hidden">
+          <div className="relative h-[60%] w-full bg-[#F5F2ED] overflow-hidden">
             {book.thumbnail ? (
               <Image
                 src={book.thumbnail}
                 alt={book.title}
                 fill
-                className="object-cover group-hover:scale-110 transition-transform duration-700"
+                className="object-cover transition-transform duration-700"
                 sizes="(max-width: 768px) 100vw, 20vw"
                 priority
               />
@@ -75,30 +76,34 @@ export function BookCard({ book, delay = 0 }: { book: BookRecommendation; delay?
               </div>
             )}
             
-            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+            <div className="absolute top-4 right-4 z-10">
               <div className="bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xl">
                 <Sparkle size={12} weight="fill" className="text-yellow-400" />
                 {book.vibeScore}%
               </div>
-              <button
-                onClick={toggleSave}
-                className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-xl backdrop-blur-md border",
-                  isSaved 
-                    ? "bg-[#8C6A5E] text-white border-[#8C6A5E]" 
-                    : "bg-white/60 text-[#1A1A1A]/40 border-white hover:bg-white hover:text-[#1A1A1A]"
-                )}
-              >
-                <Quotes size={16} weight={isSaved ? "fill" : "bold"} className="rotate-180" />
-              </button>
             </div>
           </div>
 
           {/* Front Text */}
-          <div className="p-6 flex flex-col flex-grow bg-white">
-            <span className="text-[10px] font-bold tracking-[0.2em] text-[#4A5D4E] uppercase mb-2">
-              {book.genre}
-            </span>
+          <div className="p-6 flex flex-col flex-grow bg-white relative">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-[10px] font-bold tracking-[0.2em] text-[#4A5D4E] uppercase">
+                {book.genre}
+              </span>
+              <button
+                onClick={toggleSave}
+                className={cn(
+                  "p-2 rounded-lg transition-all border",
+                  isSaved 
+                    ? "bg-[#8C6A5E] text-white border-[#8C6A5E] shadow-md" 
+                    : "bg-[#1A1A1A]/5 text-[#1A1A1A]/40 border-transparent hover:bg-[#1A1A1A]/10 hover:text-[#1A1A1A]"
+                )}
+                title={isSaved ? "Remove from Study" : "Save to Study"}
+              >
+                <Bookmark size={18} weight={isSaved ? "fill" : "bold"} />
+              </button>
+            </div>
+            
             <h3 className="font-serif text-lg font-bold text-[#1A1A1A] leading-tight line-clamp-2 mb-1">
               {book.title}
             </h3>
@@ -107,7 +112,7 @@ export function BookCard({ book, delay = 0 }: { book: BookRecommendation; delay?
             </p>
             
             <div className="mt-auto pt-4 border-t border-[#1A1A1A]/5 flex items-center justify-between">
-              <span className="text-[10px] font-bold text-[#1A1A1A]/20 uppercase tracking-widest">Flip for summary</span>
+              <span className="text-[10px] font-bold text-[#1A1A1A]/20 uppercase tracking-widest">Click to flip for summary</span>
               <ArrowUpRight size={14} className="text-[#1A1A1A]/20" />
             </div>
           </div>
@@ -152,6 +157,7 @@ export function BookCard({ book, delay = 0 }: { book: BookRecommendation; delay?
             >
               View on Google Books <ArrowUpRight size={12} weight="bold" />
             </a>
+            <p className="mt-4 text-[10px] text-center font-bold text-[#1A1A1A]/20 uppercase tracking-widest">Click to flip back</p>
           </div>
         </div>
       </motion.div>
