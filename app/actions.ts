@@ -24,13 +24,11 @@ export async function getRecommendations(
   vibeText?: string,
   genres?: string[],
   pacing?: string,
-  tone?: string
+  tone?: string,
+  era?: string
 ): Promise<RecommendationsResponse | null> {
   try {
-    if (!process.env.GOOGLE_API_KEY) {
-      console.error("Lumina: GOOGLE_API_KEY is missing.");
-      return null;
-    }
+    if (!process.env.GOOGLE_API_KEY) return null;
 
     const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
@@ -38,13 +36,15 @@ export async function getRecommendations(
     if (mode === "vibe") {
       context = `The user's vibe: "${vibeText}"`;
     } else {
-      context = `Preferences - Genres: ${genres?.join(", ")}, Pacing: ${pacing}, Tone: ${tone}`;
+      context = `Preferences - Genres: ${genres?.join(", ")}, Pacing: ${pacing}, Tone: ${tone}, Era/Time Period: ${era}`;
     }
 
     const prompt = `
       Act as a world-class Digital Librarian. 
       ${context}
 
+      CRITICAL INSTRUCTION: If an Era is specified (e.g., "Modern (Last 2 years)"), you MUST only recommend books published within that timeframe.
+      
       Tasks:
       1. Recommend 5 real books.
       2. One-sentence "reasoning".
@@ -69,33 +69,16 @@ export async function getRecommendations(
       data.recommendations.map(async (rec) => {
         try {
           const query = encodeURIComponent(`intitle:${rec.title} inauthor:${rec.author}`);
-          
-          // Strategy: Try with API key first, then fall back to public fetch if 403 occurs
-          let res = await fetch(
-            `https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=1&key=${process.env.GOOGLE_API_KEY}`
-          );
-
-          if (res.status === 403 || res.status === 401) {
-            // Fallback to public search if API key is restricted
-            res = await fetch(
-              `https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=1`
-            );
-          }
+          let res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=1&key=${process.env.GOOGLE_API_KEY}`);
+          if (!res.ok) res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=1`);
           
           const gbData = await res.json();
           const item = gbData.items?.[0];
 
           if (item) {
             const vol = item.volumeInfo;
-            let thumbnailUrl = vol.imageLinks?.extraLarge || 
-                               vol.imageLinks?.large || 
-                               vol.imageLinks?.medium || 
-                               vol.imageLinks?.thumbnail || 
-                               vol.imageLinks?.smallThumbnail;
-            
-            if (thumbnailUrl) {
-              thumbnailUrl = thumbnailUrl.replace("http://", "https://");
-            }
+            let thumbnailUrl = vol.imageLinks?.extraLarge || vol.imageLinks?.large || vol.imageLinks?.medium || vol.imageLinks?.thumbnail || vol.imageLinks?.smallThumbnail;
+            if (thumbnailUrl) thumbnailUrl = thumbnailUrl.replace("http://", "https://");
 
             return {
               ...rec,
@@ -107,7 +90,6 @@ export async function getRecommendations(
           }
           return rec;
         } catch (e) {
-          console.error(`Lumina: Metadata failed for "${rec.title}"`, e);
           return rec;
         }
       })

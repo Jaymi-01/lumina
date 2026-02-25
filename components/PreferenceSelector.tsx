@@ -7,6 +7,7 @@ import { Check } from "@phosphor-icons/react";
 const GENRES = ["Fantasy", "Sci-Fi", "Mystery", "Thriller", "Romance", "Historical", "Horror", "Biography", "Philosophy", "Poetry", "Self-Help", "Science", "True Crime", "Classic", "Contemporary"];
 const PACING = ["Fast-paced", "Moderate", "Slow-burn", "Breakneck", "Meditative"];
 const TONES = ["Dark", "Uplifting", "Melancholic", "Whimsical", "Gritty", "Humorous", "Hopeful", "Suspenseful"];
+const ERAS = ["Modern (Last 2 years)", "Recent (Last 10 years)", "21st Century", "20th Century", "Victorian Era", "Classic/Ancient"];
 
 interface PreferenceSelectorProps {
   selectedGenres: string[];
@@ -15,6 +16,8 @@ interface PreferenceSelectorProps {
   setSelectedPacing: React.Dispatch<React.SetStateAction<string>>;
   selectedTone: string;
   setSelectedTone: React.Dispatch<React.SetStateAction<string>>;
+  selectedEra: string;
+  setSelectedEra: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export function PreferenceSelector({
@@ -23,7 +26,9 @@ export function PreferenceSelector({
   selectedPacing,
   setSelectedPacing,
   selectedTone,
-  setSelectedTone
+  setSelectedTone,
+  selectedEra,
+  setSelectedEra
 }: PreferenceSelectorProps) {
   
   const toggleGenre = (genre: string) => {
@@ -36,11 +41,32 @@ export function PreferenceSelector({
 
   return (
     <div className="w-full space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Era (Time Period) */}
+      <div className="space-y-6">
+        <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/40">The Age: Era</h3>
+        <div className="flex flex-wrap gap-2">
+          {ERAS.map(era => (
+            <button
+              key={era}
+              onClick={() => setSelectedEra(era)}
+              className={cn(
+                "px-5 py-2.5 rounded-full text-xs font-semibold transition-all duration-500 border",
+                selectedEra === era
+                  ? "bg-[#8C6A5E] text-white border-[#8C6A5E] shadow-xl"
+                  : "bg-white/20 border-white/40 text-[#1A1A1A]/60 hover:bg-white/40"
+              )}
+            >
+              {era}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Reality (Genres) */}
       <div className="space-y-6">
         <div className="flex flex-col gap-1">
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/40">The Blueprint: Reality</h3>
-          <p className="text-[11px] text-[#1A1A1A]/30 italic font-serif">Select 1 to 5 genres to anchor your library.</p>
+          <p className="text-[11px] text-[#1A1A1A]/30 italic font-serif">Select 1 to 5 genres.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {GENRES.map(genre => {
@@ -50,16 +76,14 @@ export function PreferenceSelector({
                 key={genre}
                 onClick={() => toggleGenre(genre)}
                 className={cn(
-                  "px-5 py-2.5 rounded-full text-xs font-semibold transition-all duration-500 border relative overflow-hidden",
+                  "px-5 py-2.5 rounded-full text-xs font-semibold transition-all duration-500 border",
                   isSelected
                     ? "bg-[#1A1A1A] text-white border-[#1A1A1A] shadow-xl scale-105"
                     : "bg-white/20 border-white/40 text-[#1A1A1A]/60 hover:border-[#1A1A1A]/30 hover:bg-white/40"
                 )}
               >
                 {genre}
-                {isSelected && (
-                  <Check size={10} weight="bold" className="inline-ml-1.5 opacity-50 ml-1.5" />
-                )}
+                {isSelected && <Check size={10} weight="bold" className="inline-ml-1.5 ml-1.5 opacity-50" />}
               </button>
             );
           })}
@@ -67,7 +91,6 @@ export function PreferenceSelector({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-        {/* Pacing */}
         <div className="space-y-6">
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/40">The Pulse: Pacing</h3>
           <div className="flex flex-wrap gap-2">
@@ -77,9 +100,7 @@ export function PreferenceSelector({
                 onClick={() => setSelectedPacing(pace)}
                 className={cn(
                   "px-5 py-2.5 rounded-lg text-xs font-semibold transition-all duration-500 border",
-                  selectedPacing === pace
-                    ? "bg-[#4A5D4E] text-white border-[#4A5D4E] shadow-xl"
-                    : "bg-white/20 border-white/40 text-[#1A1A1A]/60 hover:bg-white/40"
+                  selectedPacing === pace ? "bg-[#4A5D4E] text-white border-[#4A5D4E] shadow-xl" : "bg-white/20 border-white/40 text-[#1A1A1A]/60 hover:bg-white/40"
                 )}
               >
                 {pace}
@@ -88,7 +109,6 @@ export function PreferenceSelector({
           </div>
         </div>
 
-        {/* Tone */}
         <div className="space-y-6">
           <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-[#1A1A1A]/40">The Spirit: Tone</h3>
           <div className="flex flex-wrap gap-2">
@@ -98,9 +118,7 @@ export function PreferenceSelector({
                 onClick={() => setSelectedTone(tone)}
                 className={cn(
                   "px-5 py-2.5 rounded-lg text-xs font-semibold transition-all duration-500 border",
-                  selectedTone === tone
-                    ? "bg-[#8C6A5E] text-white border-[#8C6A5E] shadow-xl"
-                    : "bg-white/20 border-white/40 text-[#1A1A1A]/60 hover:bg-white/40"
+                  selectedTone === tone ? "bg-[#1A1A1A] text-white border-[#1A1A1A] shadow-xl" : "bg-white/20 border-white/40 text-[#1A1A1A]/60 hover:bg-white/40"
                 )}
               >
                 {tone}
