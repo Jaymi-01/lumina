@@ -8,9 +8,24 @@ import Image from "next/image";
 import { type BookRecommendation } from "@/app/actions";
 import { cn } from "@/lib/utils";
 
+import { useLuminaStore } from "@/lib/store";
+
 export function BookCard({ book, delay = 0 }: { book: BookRecommendation; delay?: number }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const cleanDescription = cleanHtml(book.description);
+  const { favorites, addFavorite, removeFavorite, isFavorite } = useLuminaStore();
+  
+  const isSaved = book.googleBooksId ? isFavorite(book.googleBooksId) : false;
+
+  const toggleSave = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!book.googleBooksId) return;
+    if (isSaved) {
+      removeFavorite(book.googleBooksId);
+    } else {
+      addFavorite(book);
+    }
+  };
 
   return (
     <div 
@@ -60,11 +75,22 @@ export function BookCard({ book, delay = 0 }: { book: BookRecommendation; delay?
               </div>
             )}
             
-            <div className="absolute top-4 right-4 z-10">
+            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
               <div className="bg-[#1A1A1A] text-white text-[10px] font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-2xl">
                 <Sparkle size={12} weight="fill" className="text-yellow-400" />
                 {book.vibeScore}%
               </div>
+              <button
+                onClick={toggleSave}
+                className={cn(
+                  "w-8 h-8 rounded-full flex items-center justify-center transition-all shadow-xl backdrop-blur-md border",
+                  isSaved 
+                    ? "bg-[#8C6A5E] text-white border-[#8C6A5E]" 
+                    : "bg-white/60 text-[#1A1A1A]/40 border-white hover:bg-white hover:text-[#1A1A1A]"
+                )}
+              >
+                <Quotes size={16} weight={isSaved ? "fill" : "bold"} className="rotate-180" />
+              </button>
             </div>
           </div>
 
