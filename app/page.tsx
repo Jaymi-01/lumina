@@ -50,11 +50,30 @@ export default function Home() {
 
   const exportImage = async () => {
     if (captureRef.current) {
-      const dataUrl = await toPng(captureRef.current, { cacheBust: true, backgroundColor: '#F5F2ED' });
-      const link = document.createElement('a');
-      link.download = `lumina-summoning-${Date.now()}.png`;
-      link.href = dataUrl;
-      link.click();
+      setIsLoading(true);
+      try {
+        // Give the UI a moment to settle
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const dataUrl = await toPng(captureRef.current, { 
+          cacheBust: true, 
+          backgroundColor: '#F5F2ED',
+          style: {
+            padding: '40px',
+            borderRadius: '40px'
+          },
+          pixelRatio: 2 // High resolution
+        });
+        
+        const link = document.createElement('a');
+        link.download = `lumina-summoning-${Date.now()}.png`;
+        link.href = dataUrl;
+        link.click();
+      } catch (err) {
+        console.error('Failed to capture magic:', err);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
