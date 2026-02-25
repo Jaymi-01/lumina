@@ -7,7 +7,6 @@ import { PreferenceSelector } from "@/components/PreferenceSelector";
 import { BookCard } from "@/components/BookCard";
 import { PageFlipLoader } from "@/components/PageFlipLoader";
 import { PrivateStudy } from "@/components/PrivateStudy";
-import { LibrarianChat } from "@/components/LibrarianChat";
 import { AmbientArchive } from "@/components/AmbientArchive";
 import { getRecommendations, type BookRecommendation } from "./actions";
 import { BookOpenText, Sparkle, Wind, ListDashes, ArrowRight, Camera } from "@phosphor-icons/react";
@@ -24,6 +23,7 @@ export default function Home() {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedPacing, setSelectedPacing] = useState("");
   const [selectedTone, setSelectedTone] = useState("");
+  const [selectedEra, setSelectedEra] = useState("");
 
   const handleSearch = async (vibeText?: string) => {
     setIsLoading(true);
@@ -35,7 +35,8 @@ export default function Home() {
         vibeText,
         selectedGenres,
         selectedPacing,
-        selectedTone
+        selectedTone,
+        selectedEra
       );
       if (response) {
         setResults(response.recommendations);
@@ -57,7 +58,7 @@ export default function Home() {
     }
   };
 
-  const isBlueprintValid = selectedGenres.length > 0 && selectedPacing && selectedTone;
+  const isBlueprintValid = selectedGenres.length > 0 && selectedPacing && selectedTone && selectedEra;
 
   return (
     <main className="min-h-screen relative overflow-x-hidden pb-32 bg-[#F5F2ED] selection:bg-[#4A5D4E] selection:text-white">
@@ -67,7 +68,6 @@ export default function Home() {
       {/* Persistent UI Elements */}
       <PrivateStudy />
       <AmbientArchive />
-      {results.length > 0 && <LibrarianChat contextBooks={results.map(b => b.title)} />}
 
       <div className="container mx-auto px-6 pt-16 pb-12 relative z-10">
         {/* Header */}
@@ -146,6 +146,8 @@ export default function Home() {
                   setSelectedPacing={setSelectedPacing}
                   selectedTone={selectedTone}
                   setSelectedTone={setSelectedTone}
+                  selectedEra={selectedEra}
+                  setSelectedEra={setSelectedEra}
                 />
                 
                 <button
