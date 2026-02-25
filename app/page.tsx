@@ -1,19 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VibeInput } from "@/components/VibeInput";
 import { PreferenceSelector } from "@/components/PreferenceSelector";
 import { BookCard } from "@/components/BookCard";
 import { PageFlipLoader } from "@/components/PageFlipLoader";
+import { PrivateStudy } from "@/components/PrivateStudy";
+import { LibrarianChat } from "@/components/LibrarianChat";
+import { AmbientArchive } from "@/components/AmbientArchive";
 import { getRecommendations, type BookRecommendation } from "./actions";
-import { BookOpenText, Sparkle, Wind, ListDashes, ArrowRight } from "@phosphor-icons/react";
+import { BookOpenText, Sparkle, Wind, ListDashes, ArrowRight, Camera } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { toPng } from "html-to-image";
 
 export default function Home() {
   const [mode, setMode] = useState<"vibe" | "blueprint">("vibe");
   const [results, setResults] = useState<BookRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
   
   // Selection states
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -42,14 +47,27 @@ export default function Home() {
     }
   };
 
+  const exportImage = async () => {
+    if (captureRef.current) {
+      const dataUrl = await toPng(captureRef.current, { cacheBust: true, backgroundColor: '#F5F2ED' });
+      const link = document.createElement('a');
+      link.download = `lumina-summoning-${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    }
+  };
+
   const isBlueprintValid = selectedGenres.length > 0 && selectedPacing && selectedTone;
 
   return (
-    <main
-      className="min-h-screen relative overflow-x-hidden pb-32 bg-[#F5F2ED] selection:bg-[#4A5D4E] selection:text-white"
-    >
+    <main className="min-h-screen relative overflow-x-hidden pb-32 bg-[#F5F2ED] selection:bg-[#4A5D4E] selection:text-white">
       {/* Background Texture */}
       <div className="fixed inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
+
+      {/* Persistent UI Elements */}
+      <PrivateStudy />
+      <AmbientArchive />
+      {results.length > 0 && <LibrarianChat contextBooks={results.map(b => b.title)} />}
 
       <div className="container mx-auto px-6 pt-16 pb-12 relative z-10">
         {/* Header */}
@@ -110,10 +128,6 @@ export default function Home() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.5 }}
               >
-                <div className="text-center mb-10">
-                  <h2 className="text-sm font-bold uppercase tracking-[0.3em] text-[#1A1A1A]/30 mb-2">Descriptive Search</h2>
-                  <p className="font-serif italic text-[#1A1A1A]/50">Speak your mind, and let the librarian interpret.</p>
-                </div>
                 <VibeInput onSearch={handleSearch} isLoading={isLoading} />
               </motion.div>
             ) : (
@@ -150,45 +164,59 @@ export default function Home() {
           </AnimatePresence>
         </section>
 
-        {/* Results */}
-        <section className="max-w-7xl mx-auto min-h-[600px] mb-20">
-          <AnimatePresence mode="wait">
-            {isLoading ? (
-              <motion.div
-                key="loader"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="py-12"
+        {/* Results Container */}
+        <div ref={captureRef} className="p-8 rounded-[2rem] bg-transparent">
+          {results.length > 0 && (
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-xs font-bold uppercase tracking-[0.4em] text-[#1A1A1A]/20">Summoned Volumes</h2>
+              <button
+                onClick={exportImage}
+                className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]/40 hover:text-[#4A5D4E] transition-colors"
               >
-                <PageFlipLoader />
-              </motion.div>
-            ) : results.length > 0 ? (
-              <motion.div
-                key="results"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8"
-              >
-                {results.map((book, idx) => (
-                  <BookCard key={book.googleBooksId || idx} book={book} delay={idx} />
-                ))}
-              </motion.div>
-            ) : (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-20 opacity-10 pointer-events-none"
-              >
-                <div className="flex flex-col items-center gap-4">
-                  <Sparkle size={48} weight="thin" />
-                  <p className="text-xl italic font-serif">The archives await your direction.</p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </section>
+                <Camera size={16} /> Capture the Magic
+              </button>
+            </div>
+          )}
+
+          <section className="max-w-7xl mx-auto min-h-[600px] mb-20">
+            <AnimatePresence mode="wait">
+              {isLoading ? (
+                <motion.div
+                  key="loader"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="py-12"
+                >
+                  <PageFlipLoader />
+                </motion.div>
+              ) : results.length > 0 ? (
+                <motion.div
+                  key="results"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8"
+                >
+                  {results.map((book, idx) => (
+                    <BookCard key={book.googleBooksId || idx} book={book} delay={idx} />
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-20 opacity-10 pointer-events-none"
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <Sparkle size={48} weight="thin" />
+                    <p className="text-xl italic font-serif">The archives await your direction.</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
+        </div>
       </div>
 
       <footer className="absolute bottom-12 left-0 right-0 text-center pointer-events-none">
