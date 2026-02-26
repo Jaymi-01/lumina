@@ -256,58 +256,6 @@ export default function Home() {
           </section>
         </div>
       </div>
-          {results.length > 0 && (
-            <div className="flex items-center justify-between mb-8">
-              <h2 className="text-xs font-bold uppercase tracking-[0.4em] text-[#1A1A1A]/20">Summoned Volumes</h2>
-              <button
-                onClick={exportImage}
-                className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]/40 hover:text-[#4A5D4E] transition-colors"
-              >
-                <Camera size={16} /> Capture the Magic
-              </button>
-            </div>
-          )}
-
-          <section className="max-w-7xl mx-auto min-h-[600px] mb-20">
-            <AnimatePresence mode="wait">
-              {isLoading ? (
-                <motion.div
-                  key="loader"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  className="py-12"
-                >
-                  <PageFlipLoader />
-                </motion.div>
-              ) : results.length > 0 ? (
-                <motion.div
-                  key="results"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8"
-                >
-                  {results.map((book, idx) => (
-                    <BookCard key={book.googleBooksId || idx} book={book} delay={idx} />
-                  ))}
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="empty"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-20 opacity-10 pointer-events-none"
-                >
-                  <div className="flex flex-col items-center gap-4">
-                    <Sparkle size={48} weight="thin" />
-                    <p className="text-xl italic font-serif">The archives await your direction.</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </section>
-        </div>
-      </div>
 
       <footer className="absolute bottom-12 left-0 right-0 text-center pointer-events-none">
         <p className="text-[10px] tracking-[0.5em] font-bold uppercase text-[#1A1A1A]/20">
