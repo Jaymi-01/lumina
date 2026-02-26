@@ -143,7 +143,7 @@ export default function Home() {
           <AnimatePresence mode="wait">
             {mode === "vibe" ? (
               <motion.div key="vibe" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <VibeInput onSearch={(text) => handleSearch(vibeText = text)} isLoading={isLoading} />
+                <VibeInput onSearch={(text) => handleSearch(text)} isLoading={isLoading} />
               </motion.div>
             ) : (
               <motion.div key="blueprint" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col items-center">
