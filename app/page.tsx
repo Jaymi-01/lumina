@@ -8,73 +8,94 @@ import { BookCard, CaptureBookCard } from "@/components/BookCard";
 import { PageFlipLoader } from "@/components/PageFlipLoader";
 import { PrivateStudy } from "@/components/PrivateStudy";
 import { AmbientArchive } from "@/components/AmbientArchive";
+import { ArchiveEcho } from "@/components/ArchiveEcho";
+import { ElderWand } from "@/components/ElderWand";
 import { getRecommendations, type BookRecommendation } from "./actions";
-import { BookOpenText, Sparkle, Wind, ListDashes, ArrowRight, Camera } from "@phosphor-icons/react";
+import { BookOpenText, Sparkle, Wind, ListDashes, ArrowRight, Camera, LockKey } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { domToPng } from "modern-screenshot";
 import { toast } from "sonner";
+import { useLuminaStore, type SummoningHistory } from "@/lib/store";
 
 export default function Home() {
   const [mode, setMode] = useState<"vibe" | "blueprint">("vibe");
   const [results, setResults] = useState<BookRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
-  
   const captureRef = useRef<HTMLDivElement>(null);
   
-  const handleSearch = async (vibeText?: string) => {
-    setIsLoading(true);
-    setResults([]);
-    try {
-      const response = await getRecommendations(mode, vibeText, selectedGenres, selectedPacing, selectedTone, selectedEra);
-      if (response) {
-        setResults(response.recommendations);
-        toast.success("Volumes summoned!");
-      }
-    } catch (error) {
-      toast.error("The archives are quiet. Try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { addHistory } = useLuminaStore();
 
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [selectedPacing, setSelectedPacing] = useState("");
   const [selectedTone, setSelectedTone] = useState("");
   const [selectedEra, setSelectedEra] = useState("");
 
-  const exportImage = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleSearch = async (vibeText?: string, isRestricted = false) => {
+    setIsLoading(true);
+    setResults([]);
     
+    const searchMode = isRestricted ? "restricted" : mode;
+    
+    try {
+      const response = await getRecommendations(searchMode, vibeText, selectedGenres, selectedPacing, selectedTone, selectedEra);
+      if (response) {
+        setResults(response.recommendations);
+        toast.success(isRestricted ? "The Restricted Section has opened..." : "Volumes summoned!");
+        
+        // Record History
+        if (!isRestricted) {
+          addHistory({
+            mode,
+            vibeText,
+            preferences: mode === "blueprint" ? {
+              genres: selectedGenres,
+              pacing: selectedPacing,
+              tone: selectedTone,
+              era: selectedEra
+            } : undefined
+          });
+        }
+      }
+    } catch (error) {
+      toast.error("The magic archives flickered. Try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleReSummon = (history: SummoningHistory) => {
+    setMode(history.mode);
+    if (history.mode === "vibe") {
+      handleSearch(history.vibeText);
+    } else if (history.preferences) {
+      setSelectedGenres(history.preferences.genres);
+      setSelectedPacing(history.preferences.pacing);
+      setSelectedTone(history.preferences.tone);
+      setSelectedEra(history.preferences.era);
+      // Wait for state to apply
+      setTimeout(() => handleSearch(), 50);
+    }
+  };
+
+  const exportImage = async (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation();
     if (captureRef.current && !isCapturing) {
       setIsCapturing(true);
       const captureToast = toast.loading("Capturing archival records...");
-      
       try {
-        // Essential delay for images to load in the background layer
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        const dataUrl = await domToPng(captureRef.current, { 
-          backgroundColor: '#F5F2ED',
-          scale: 2,
-          quality: 1,
-        });
-        
+        const dataUrl = await domToPng(captureRef.current, { backgroundColor: '#F5F2ED', scale: 2 });
         if (dataUrl) {
           const link = document.createElement('a');
           link.download = `lumina-archive-${Date.now()}.png`;
           link.href = dataUrl;
-          document.body.appendChild(link);
           link.click();
-          document.body.removeChild(link);
           toast.success("Magic captured!", { id: captureToast });
         }
       } catch (err) {
-        toast.error("The magic archives flickered. Try again.", { id: captureToast });
-      } finally {
-        setIsCapturing(false);
-      }
+        toast.error("Capture failed.", { id: captureToast });
+      } finally { setIsCapturing(false); }
     }
   };
 
@@ -82,9 +103,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen relative overflow-x-hidden pb-32 bg-[#F5F2ED] selection:bg-[#4A5D4E] selection:text-white">
+      <ElderWand />
       <div className="fixed inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
 
       <PrivateStudy />
+      <ArchiveEcho onReSummon={handleReSummon} />
       <AmbientArchive />
 
       <div className="container mx-auto px-6 pt-16 pb-12 relative z-10">
@@ -96,8 +119,8 @@ export default function Home() {
           <p className="text-lg md:text-xl text-[#1A1A1A]/40 max-w-lg mx-auto italic font-medium">The Digital Librarian for discovery.</p>
         </header>
 
-        <div className="max-w-md mx-auto mb-16 relative z-20">
-          <div className="bg-white/20 backdrop-blur-xl p-1.5 rounded-2xl border border-white/40 flex shadow-inner">
+        <div className="max-w-md mx-auto mb-16 relative z-20 flex flex-col items-center gap-6">
+          <div className="bg-white/20 backdrop-blur-xl p-1.5 rounded-2xl border border-white/40 flex shadow-inner w-full">
             <button onClick={() => setMode("vibe")} className={cn("flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all", mode === "vibe" ? "bg-white text-[#1A1A1A] shadow-lg" : "text-[#1A1A1A]/40")}>
               <Wind size={18} weight="fill" /> The Vibe
             </button>
@@ -105,13 +128,22 @@ export default function Home() {
               <ListDashes size={18} weight="fill" /> The Blueprint
             </button>
           </div>
+
+          <button
+            onClick={() => handleSearch(undefined, true)}
+            disabled={isLoading}
+            className="group flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-[#1A1A1A]/30 hover:text-[#8C6A5E] transition-all"
+          >
+            <LockKey size={16} weight="fill" className="group-hover:rotate-12 transition-transform" />
+            Enter Restricted Section
+          </button>
         </div>
 
         <section className="max-w-5xl mx-auto mb-24 relative z-20">
           <AnimatePresence mode="wait">
             {mode === "vibe" ? (
               <motion.div key="vibe" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
-                <VibeInput onSearch={handleSearch} isLoading={isLoading} />
+                <VibeInput onSearch={(text) => handleSearch(vibeText = text)} isLoading={isLoading} />
               </motion.div>
             ) : (
               <motion.div key="blueprint" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="flex flex-col items-center">
@@ -132,7 +164,7 @@ export default function Home() {
 
         {results.length > 0 && (
           <div className="max-w-7xl mx-auto px-8 mb-8 flex justify-end">
-            <button onClick={exportImage} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]/40 hover:text-[#4A5D4E] transition-colors bg-white/40 backdrop-blur-md p-3 rounded-xl border border-white/50">
+            <button onClick={exportImage} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]/40 hover:text-[#4A5D4E] transition-colors bg-white/40 backdrop-blur-md p-3 rounded-xl border border-white/50 shadow-sm">
               <Camera size={18} weight="bold" /> Capture the Magic
             </button>
           </div>
@@ -156,7 +188,6 @@ export default function Home() {
           </AnimatePresence>
         </section>
 
-        {/* Improved Hidden Capture Layer */}
         <div className="absolute top-0 left-0 w-0 h-0 overflow-hidden pointer-events-none opacity-0 select-none z-[-100]">
           <div ref={captureRef} className="p-16 w-[1400px] bg-[#F5F2ED] flex flex-col items-center">
             <div className="mb-12 text-center">
