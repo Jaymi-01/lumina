@@ -25,7 +25,7 @@ interface LuminaState {
   addHistory: (item: Omit<SummoningHistory, "id" | "timestamp">) => void;
   clearHistory: () => void;
   
-  ambientSound: string | null;
+  ambientSound: string | null; // 'rain', 'fire', 'theme', null
   setAmbientSound: (sound: string | null) => void;
 }
 
