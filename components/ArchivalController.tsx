@@ -11,34 +11,54 @@ import {
   X,
   Trash,
   Moon,
-  Sun
+  Sun,
+  Question,
+  Info
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { BookCard } from "./BookCard";
 
 interface ArchivalControllerProps {
   onReSummon: (history: SummoningHistory) => void;
 }
 
-const SOUNDS = [
-  { id: "theme", icon: MusicNotes, label: "Hedwig's Theme", url: "/sounds/theme.mp3" },
-];
-
 export function ArchivalController({ onReSummon }: ArchivalControllerProps) {
   const { ambientSound, setAmbientSound, favorites, history, isMidnight, toggleMidnight } = useLuminaStore();
   const [isStudyOpen, setIsStudyOpen] = useState(false);
   const [isEchoOpen, setIsEchoOpen] = useState(false);
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (audioRef.current) {
       if (ambientSound === "theme") {
         audioRef.current.src = "/sounds/theme.mp3";
+        audioRef.current.volume = 0.3; // Reduced volume
         audioRef.current.play().catch(() => setAmbientSound(null));
       } else {
         audioRef.current.pause();
       }
     }
+  }, [ambientSound, setAmbientSound]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (audioRef.current && !audioRef.current.paused) {
+          audioRef.current.pause();
+        }
+      } else {
+        // Stop the song when coming back (ensure it stays paused or stops)
+        if (ambientSound === "theme" && audioRef.current) {
+          audioRef.current.pause();
+          setAmbientSound(null); // Explicitly turn off the atmosphere on return
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [ambientSound, setAmbientSound]);
 
   return (
@@ -80,7 +100,7 @@ export function ArchivalController({ onReSummon }: ArchivalControllerProps) {
         </div>
 
         {/* Summons Section */}
-        <div className="flex items-center gap-1 px-2">
+        <div className={cn("flex items-center gap-1 px-2 border-r", isMidnight ? "border-white/10" : "border-[#1A1A1A]/10")}>
           <button
             onClick={() => setIsEchoOpen(true)}
             className={cn(
@@ -117,11 +137,26 @@ export function ArchivalController({ onReSummon }: ArchivalControllerProps) {
           </button>
         </div>
 
+        {/* Help Section */}
+        <div className="flex items-center gap-1 px-2">
+          <button
+            onClick={() => setIsGuideOpen(true)}
+            className={cn(
+              "p-3 rounded-full transition-all",
+              isMidnight ? "text-white/40 hover:bg-white/10" : "text-[#1A1A1A]/40 hover:bg-white/60"
+            )}
+            title="Librarian's Guide"
+          >
+            <Question size={20} weight="bold" />
+          </button>
+        </div>
+
         <audio ref={audioRef} loop />
       </div>
 
       <StudyModal isOpen={isStudyOpen} onClose={() => setIsStudyOpen(false)} isMidnight={isMidnight} />
       <EchoModal isOpen={isEchoOpen} onClose={() => setIsEchoOpen(false)} onReSummon={onReSummon} isMidnight={isMidnight} />
+      <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} isMidnight={isMidnight} />
     </>
   );
 }
@@ -207,4 +242,83 @@ function EchoModal({ isOpen, onClose, onReSummon, isMidnight }: { isOpen: boolea
   );
 }
 
-import { BookCard } from "./BookCard";
+function GuideModal({ isOpen, onClose, isMidnight }: { isOpen: boolean; onClose: () => void; isMidnight: boolean }) {
+  const steps = [
+    {
+      title: "Choose Your Path",
+      desc: "Use 'The Vibe' to describe a feeling or 'The Blueprint' to specify genres and pacing.",
+      icon: <Info size={24} />
+    },
+    {
+      title: "Set the Mood",
+      desc: "Toggle 'Atmosphere' for ambient music and 'Midnight Archive' for a darker aesthetic.",
+      icon: <MusicNotes size={24} />
+    },
+    {
+      title: "Build Your Collection",
+      desc: "Click the heart on any book to save it to your 'Private Study'.",
+      icon: <Books size={24} />
+    },
+    {
+      title: "The Restricted Section",
+      desc: "A hidden portal for specialized archival requests.",
+      icon: <Sun size={24} />
+    }
+  ];
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-6">
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }} 
+            animate={{ opacity: 1, scale: 1, y: 0 }} 
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className={cn(
+              "relative w-full max-w-lg p-10 rounded-[32px] border shadow-2xl",
+              isMidnight ? "bg-indigo-950 border-white/10 text-white" : "bg-[#F5F2ED] border-black/5 text-[#1A1A1A]"
+            )}
+          >
+            <button onClick={onClose} className="absolute top-8 right-8 p-2 opacity-40 hover:opacity-100 transition-opacity">
+              <X size={20} weight="bold" />
+            </button>
+            
+            <h2 className="text-3xl font-serif font-bold mb-2">Librarian's Guide</h2>
+            <p className="text-sm opacity-60 mb-10">Welcome to Lumina. Here is how to navigate the archives.</p>
+            
+            <div className="space-y-8">
+              {steps.map((step, i) => (
+                <div key={i} className="flex gap-6">
+                  <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center shrink-0", isMidnight ? "bg-white/5" : "bg-black/5")}>
+                    {step.icon}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm uppercase tracking-widest mb-1">{step.title}</h3>
+                    <p className="text-sm opacity-60 leading-relaxed">{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <button 
+              onClick={onClose}
+              className={cn(
+                "w-full mt-10 py-4 rounded-2xl font-bold transition-all hover:scale-[1.02]",
+                isMidnight ? "bg-white text-indigo-950" : "bg-[#1A1A1A] text-white"
+              )}
+            >
+              Begin Archiving
+            </button>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+}
