@@ -27,6 +27,9 @@ interface LuminaState {
   
   ambientSound: string | null; // 'rain', 'fire', 'theme', null
   setAmbientSound: (sound: string | null) => void;
+  
+  isMidnight: boolean;
+  toggleMidnight: () => void;
 }
 
 export const useLuminaStore = create<LuminaState>()(
@@ -48,7 +51,6 @@ export const useLuminaStore = create<LuminaState>()(
           id: Math.random().toString(36).substring(7),
           timestamp: Date.now()
         };
-        // Keep only last 10 entries
         const newHistory = [newItem, ...state.history].slice(0, 10);
         return { history: newHistory };
       }),
@@ -56,10 +58,13 @@ export const useLuminaStore = create<LuminaState>()(
       
       ambientSound: null,
       setAmbientSound: (sound) => set({ ambientSound: sound }),
+
+      isMidnight: false,
+      toggleMidnight: () => set((state) => ({ isMidnight: !state.isMidnight })),
     }),
     {
       name: "lumina-storage",
-      partialize: (state) => ({ favorites: state.favorites, history: state.history }),
+      partialize: (state) => ({ favorites: state.favorites, history: state.history, isMidnight: state.isMidnight }),
     }
   )
 );
