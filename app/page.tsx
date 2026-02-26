@@ -17,6 +17,7 @@ export default function Home() {
   const [mode, setMode] = useState<"vibe" | "blueprint">("vibe");
   const [results, setResults] = useState<BookRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
   const captureRef = useRef<HTMLDivElement>(null);
   
   // Selection states
@@ -48,13 +49,16 @@ export default function Home() {
     }
   };
 
-  const exportImage = async () => {
+  const exportImage = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (captureRef.current) {
-      setIsLoading(true);
+      setIsCapturing(true);
+      // Small delay to ensure state propagates
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       try {
-        // Give the UI a moment to settle
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
         const dataUrl = await toPng(captureRef.current, { 
           cacheBust: true, 
           backgroundColor: '#F5F2ED',
@@ -62,7 +66,7 @@ export default function Home() {
             padding: '40px',
             borderRadius: '40px'
           },
-          pixelRatio: 2 // High resolution
+          pixelRatio: 2
         });
         
         const link = document.createElement('a');
@@ -72,7 +76,7 @@ export default function Home() {
       } catch (err) {
         console.error('Failed to capture magic:', err);
       } finally {
-        setIsLoading(false);
+        setIsCapturing(false);
       }
     }
   };
@@ -107,7 +111,7 @@ export default function Home() {
         </header>
 
         {/* Mode Switcher */}
-        <div className="max-w-md mx-auto mb-16">
+        <div className="max-w-md mx-auto mb-16 relative z-20">
           <div className="bg-white/20 backdrop-blur-xl p-1.5 rounded-2xl border border-white/40 flex shadow-inner">
             <button
               onClick={() => setMode("vibe")}
@@ -137,7 +141,7 @@ export default function Home() {
         </div>
 
         {/* Input Sections */}
-        <section className="max-w-5xl mx-auto mb-24">
+        <section className="max-w-5xl mx-auto mb-24 relative z-20">
           <AnimatePresence mode="wait">
             {mode === "vibe" ? (
               <motion.div
@@ -185,8 +189,73 @@ export default function Home() {
           </AnimatePresence>
         </section>
 
-        {/* Results Container */}
-        <div ref={captureRef} className="p-8 rounded-[2rem] bg-transparent">
+        {/* Capture Control (Outside of capture area) */}
+        {results.length > 0 && !isCapturing && (
+          <div className="max-w-7xl mx-auto px-8 mb-4 flex justify-end">
+            <button
+              onClick={exportImage}
+              className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[#1A1A1A]/40 hover:text-[#4A5D4E] transition-colors bg-white/40 backdrop-blur-md p-3 rounded-xl border border-white/50 shadow-sm"
+            >
+              <Camera size={18} weight="bold" /> Capture the Magic
+            </button>
+          </div>
+        )}
+
+        {/* Results Container (The part that gets captured) */}
+        <div ref={captureRef} className={cn("p-12 rounded-[3rem] transition-all", isCapturing ? "bg-[#F5F2ED]" : "bg-transparent")}>
+          {results.length > 0 && (
+            <div className="mb-12 text-center">
+              <h2 className="text-xs font-bold uppercase tracking-[0.5em] text-[#1A1A1A]/20 mb-4">Summoned Volumes</h2>
+              {isCapturing && (
+                <div className="flex items-center justify-center gap-2 opacity-40 mb-8">
+                  <div className="h-px w-12 bg-[#1A1A1A]" />
+                  <span className="text-[10px] font-serif italic uppercase tracking-widest text-[#1A1A1A]">Lumina Digital Library</span>
+                  <div className="h-px w-12 bg-[#1A1A1A]" />
+                </div>
+              )}
+            </div>
+          )}
+
+          <section className="max-w-7xl mx-auto min-h-[600px] mb-8">
+            <AnimatePresence mode="wait">
+              {isLoading ? (
+                <motion.div
+                  key="loader"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="py-12"
+                >
+                  <PageFlipLoader />
+                </motion.div>
+              ) : results.length > 0 ? (
+                <motion.div
+                  key="results"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8"
+                >
+                  {results.map((book, idx) => (
+                    <BookCard key={book.googleBooksId || idx} book={book} delay={idx} isCapturing={isCapturing} />
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="empty"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-20 opacity-10 pointer-events-none"
+                >
+                  <div className="flex flex-col items-center gap-4">
+                    <Sparkle size={48} weight="thin" />
+                    <p className="text-xl italic font-serif">The archives await your direction.</p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </section>
+        </div>
+      </div>
           {results.length > 0 && (
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-xs font-bold uppercase tracking-[0.4em] text-[#1A1A1A]/20">Summoned Volumes</h2>
