@@ -19,6 +19,28 @@ interface RecommendationsResponse {
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
+/**
+ * Fallback to Open Library to find a cover if Google fails
+ */
+async function fetchOpenLibraryCover(title: string, author: string) {
+  try {
+    const query = encodeURIComponent(`title=${title}&author=${author}`);
+    const res = await fetch(`https://openlibrary.org/search.json?${query}&limit=1`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const work = data.docs?.[0];
+    if (work && work.cover_i) {
+      return `https://covers.openlibrary.org/b/id/${work.cover_i}-L.jpg`;
+    }
+    if (work && work.isbn && work.isbn.length > 0) {
+      return `https://covers.openlibrary.org/b/isbn/${work.isbn[0]}-L.jpg`;
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function getRecommendations(
   mode: "vibe" | "blueprint",
   vibeText?: string,
@@ -42,13 +64,7 @@ export async function getRecommendations(
     const prompt = `
       Act as a world-class Digital Librarian. 
       ${context}
-
-      CRITICAL INSTRUCTION: If an Era is specified (e.g., "Modern (Last 2 years)"), you MUST only recommend books published within that timeframe.
-      
-      Tasks:
-      1. Recommend 5 real books.
-      2. One-sentence "reasoning".
-      3. "Vibe Score" (0-100).
+      CRITICAL: Only recommend real-world books with verified titles and authors.
       
       Return ONLY a JSON object:
       {
@@ -67,7 +83,13 @@ export async function getRecommendations(
 
     const enrichedRecs = await Promise.all(
       data.recommendations.map(async (rec) => {
+        let finalThumbnail = "";
+        let finalDescription = "No archival summary available.";
+        let finalGenre = rec.genre || "Literature";
+        let googleId = "";
+
         try {
+          // 1. Try Google Books
           const query = encodeURIComponent(`intitle:${rec.title} inauthor:${rec.author}`);
           let res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=1&key=${process.env.GOOGLE_API_KEY}`);
           if (!res.ok) res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=1`);
@@ -77,21 +99,35 @@ export async function getRecommendations(
 
           if (item) {
             const vol = item.volumeInfo;
-            let thumbnailUrl = vol.imageLinks?.extraLarge || vol.imageLinks?.large || vol.imageLinks?.medium || vol.imageLinks?.thumbnail || vol.imageLinks?.smallThumbnail;
-            if (thumbnailUrl) thumbnailUrl = thumbnailUrl.replace("http://", "https://");
-
-            return {
-              ...rec,
-              googleBooksId: item.id,
-              thumbnail: thumbnailUrl,
-              genre: vol.categories?.[0] || (mode === "blueprint" ? genres?.[0] : "Literature"),
-              description: vol.description || "No archival summary available.",
-            };
+            googleId = item.id;
+            finalGenre = vol.categories?.[0] || finalGenre;
+            finalDescription = vol.description || finalDescription;
+            
+            let googleThumb = vol.imageLinks?.extraLarge || vol.imageLinks?.large || vol.imageLinks?.medium || vol.imageLinks?.thumbnail || vol.imageLinks?.smallThumbnail;
+            if (googleThumb) {
+              finalThumbnail = googleThumb.replace("http://", "https://");
+            }
           }
-          return rec;
+
+          // 2. Fallback to Open Library if Google failed to provide a cover
+          if (!finalThumbnail) {
+            const olCover = await fetchOpenLibraryCover(rec.title, rec.author);
+            if (olCover) finalThumbnail = olCover;
+          }
+
         } catch (e) {
-          return rec;
+          console.error("Metadata fetch error, attempting Open Library fallback...");
+          const olCover = await fetchOpenLibraryCover(rec.title, rec.author);
+          if (olCover) finalThumbnail = olCover;
         }
+
+        return {
+          ...rec,
+          googleBooksId: googleId,
+          thumbnail: finalThumbnail,
+          genre: finalGenre,
+          description: finalDescription,
+        };
       })
     );
 
