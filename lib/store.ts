@@ -2,9 +2,17 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { type BookRecommendation } from "@/app/actions";
 
-interface ChatMessage {
-  role: "user" | "librarian";
-  content: string;
+export interface SummoningHistory {
+  id: string;
+  timestamp: number;
+  mode: "vibe" | "blueprint";
+  vibeText?: string;
+  preferences?: {
+    genres: string[];
+    pacing: string;
+    tone: string;
+    era: string;
+  };
 }
 
 interface LuminaState {
@@ -13,11 +21,11 @@ interface LuminaState {
   removeFavorite: (id: string) => void;
   isFavorite: (id: string) => boolean;
   
-  chatHistory: ChatMessage[];
-  addChatMessage: (message: ChatMessage) => void;
-  clearChat: () => void;
+  history: SummoningHistory[];
+  addHistory: (item: Omit<SummoningHistory, "id" | "timestamp">) => void;
+  clearHistory: () => void;
   
-  ambientSound: string | null; // 'rain', 'fire', 'theme', null
+  ambientSound: string | null;
   setAmbientSound: (sound: string | null) => void;
 }
 
@@ -33,18 +41,25 @@ export const useLuminaStore = create<LuminaState>()(
       })),
       isFavorite: (id) => get().favorites.some((b) => b.googleBooksId === id),
       
-      chatHistory: [],
-      addChatMessage: (msg) => set((state) => ({ 
-        chatHistory: [...state.chatHistory, msg] 
-      })),
-      clearChat: () => set({ chatHistory: [] }),
+      history: [],
+      addHistory: (item) => set((state) => {
+        const newItem = {
+          ...item,
+          id: Math.random().toString(36).substring(7),
+          timestamp: Date.now()
+        };
+        // Keep only last 10 entries
+        const newHistory = [newItem, ...state.history].slice(0, 10);
+        return { history: newHistory };
+      }),
+      clearHistory: () => set({ history: [] }),
       
       ambientSound: null,
       setAmbientSound: (sound) => set({ ambientSound: sound }),
     }),
     {
       name: "lumina-storage",
-      partialize: (state) => ({ favorites: state.favorites }), // Only persist favorites
+      partialize: (state) => ({ favorites: state.favorites, history: state.history }),
     }
   )
 );
