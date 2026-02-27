@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { VibeInput } from "@/components/VibeInput";
 import { PreferenceSelector } from "@/components/PreferenceSelector";
 import { BookCard } from "@/components/BookCard";
 import { PageFlipLoader } from "@/components/PageFlipLoader";
+import { LuminaEntryLoader } from "@/components/LuminaEntryLoader";
 import { ArchivalController } from "@/components/ArchivalController";
 import { ElderWand } from "@/components/ElderWand";
 import { getRecommendations, type BookRecommendation } from "./actions";
@@ -17,7 +18,16 @@ import { useLuminaStore, type SummoningHistory } from "@/lib/store";
 export default function Home() {
   const [results, setResults] = useState<BookRecommendation[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isAppLoading, setIsAppLoading] = useState(true);
   const { addHistory, isMidnight } = useLuminaStore();
+
+  useEffect(() => {
+    // Artificial delay to show the beautiful loading screen
+    const timer = setTimeout(() => {
+      setIsAppLoading(false);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const [mode, setMode] = useState<"vibe" | "blueprint">("vibe");
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
@@ -59,10 +69,39 @@ export default function Home() {
   const isBlueprintValid = selectedGenres.length > 0 && selectedPacing && selectedTone && selectedEra;
 
   return (
-    <main className={cn(
-      "min-h-screen relative overflow-x-hidden pb-32 transition-colors duration-1000 ease-in-out selection:bg-[#4A5D4E] selection:text-white",
-      isMidnight ? "bg-slate-950" : "bg-[#F5F2ED]"
-    )}>
+    <>
+      <AnimatePresence>
+        {isAppLoading && (
+          <motion.div
+            key="app-loader"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.8, ease: "easeInOut" }}
+            className={cn(
+              "fixed inset-0 z-[1000] flex flex-col items-center justify-center transition-colors duration-1000",
+              isMidnight ? "bg-slate-950" : "bg-[#F5F2ED]"
+            )}
+          >
+            <LuminaEntryLoader />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
+              className={cn(
+                "mt-4 text-[10px] font-bold uppercase tracking-[0.5em]",
+                isMidnight ? "text-white/20" : "text-[#1A1A1A]/20"
+              )}
+            >
+              Opening the Archives
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <main className={cn(
+        "min-h-screen relative overflow-x-hidden pb-32 transition-colors duration-1000 ease-in-out selection:bg-[#4A5D4E] selection:text-white",
+        isMidnight ? "bg-slate-950" : "bg-[#F5F2ED]"
+      )}>
       <ElderWand />
       <div className={cn("fixed inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]", isMidnight && "invert")} />
 
@@ -137,5 +176,6 @@ export default function Home() {
         <p className={cn("text-[10px] tracking-[0.5em] font-bold uppercase transition-colors", isMidnight ? "text-white/10" : "text-[#1A1A1A]/20")}>Lumina Digital Library</p>
       </footer>
     </main>
+    </>
   );
 }
