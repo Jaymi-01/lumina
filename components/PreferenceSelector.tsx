@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Check } from "@phosphor-icons/react";
 import { useLuminaStore } from "@/lib/store";
 
-const GENRES = ["Fantasy", "Sci-Fi", "Mystery", "Thriller", "Romance", "Historical", "Horror", "Biography", "Philosophy", "Poetry", "Self-Help", "Science", "True Crime", "Classic", "Contemporary"];
+const GENRES = ["Fantasy", "Sci-Fi", "Mystery", "Thriller", "Romance", "Historical", "Horror", "Biography", "Philosophy", "Poetry", "Self-Help", "Science", "True Crime", "Classic", "Contemporary", "African Literatures"];
 const PACING = ["Fast-paced", "Moderate", "Slow-burn", "Breakneck", "Meditative"];
 const TONES = ["Dark", "Uplifting", "Melancholic", "Whimsical", "Gritty", "Humorous", "Hopeful", "Suspenseful"];
 const ERAS = ["Modern (Last 2 years)", "Recent (Last 10 years)", "21st Century", "20th Century", "Victorian Era", "Classic/Ancient"];
