@@ -21,8 +21,8 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 
 async function fetchOpenLibraryCover(title: string, author: string) {
   try {
-    const query = encodeURIComponent(`title=${title}&author=${author}`);
-    const res = await fetch(`https://openlibrary.org/search.json?${query}&limit=1`);
+    const query = encodeURIComponent(`title:${title} author:${author}`);
+    const res = await fetch(`https://openlibrary.org/search.json?q=${query}&limit=1`);
     if (!res.ok) return null;
     const data = await res.json();
     const work = data.docs?.[0];
@@ -43,9 +43,12 @@ export async function getRecommendations(
   era?: string
 ): Promise<RecommendationsResponse | null> {
   try {
-    if (!process.env.GOOGLE_API_KEY) return null;
+    if (!process.env.GOOGLE_API_KEY) {
+      console.error("Lumina: GOOGLE_API_KEY is missing");
+      return null;
+    }
 
-    const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     let context = "";
     if (mode === "vibe") {
