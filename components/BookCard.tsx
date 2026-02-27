@@ -41,7 +41,14 @@ export function BookCard({ book, delay = 0 }: BookCardProps) {
         <div className={cn("absolute inset-0 rounded-2xl overflow-hidden flex flex-col border transition-colors duration-1000", isMidnight ? "bg-slate-900 border-white/5" : "bg-white border-[#1A1A1A]/10")} style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}>
           <div className={cn("relative h-[55%] w-full overflow-hidden border-b transition-colors duration-1000", isMidnight ? "bg-slate-950 border-white/5" : "bg-[#F5F2ED] border-[#1A1A1A]/5")}>
             {book.thumbnail ? (
-              <Image src={book.thumbnail} alt={book.title} fill className="object-cover transition-transform duration-700 hover:scale-105" sizes="(max-width: 768px) 100vw, 20vw" priority />
+              <Image 
+                src={book.thumbnail} 
+                alt={book.title} 
+                fill 
+                className="object-cover transition-transform duration-700 hover:scale-105" 
+                sizes="(max-width: 768px) 100vw, 20vw" 
+                unoptimized
+              />
             ) : (
               <div className="flex flex-col items-center justify-center h-full opacity-20"><BookOpen size={64} weight="thin" /><span className="text-[10px] mt-2 font-bold uppercase tracking-widest">No Cover</span></div>
             )}
