@@ -13,7 +13,8 @@ import {
   Moon,
   Sun,
   Question,
-  Info
+  Info,
+  LockKey
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -24,11 +25,26 @@ interface ArchivalControllerProps {
 }
 
 export function ArchivalController({ onReSummon }: ArchivalControllerProps) {
-  const { ambientSound, setAmbientSound, favorites, history, isMidnight, toggleMidnight } = useLuminaStore();
+  const { ambientSound, setAmbientSound, favorites, history, isMidnight, toggleMidnight, hasSeenGuide, setHasSeenGuide } = useLuminaStore();
   const [isStudyOpen, setIsStudyOpen] = useState(false);
   const [isEchoOpen, setIsEchoOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    // Only show guide if it's the first time
+    if (!hasSeenGuide) {
+      const timer = setTimeout(() => {
+        setIsGuideOpen(true);
+      }, 2000); // Slight delay for the magic to feel right
+      return () => clearTimeout(timer);
+    }
+  }, [hasSeenGuide]);
+
+  const closeGuide = () => {
+    setIsGuideOpen(false);
+    if (!hasSeenGuide) setHasSeenGuide(true);
+  };
 
   useEffect(() => {
     if (audioRef.current) {
@@ -156,13 +172,23 @@ export function ArchivalController({ onReSummon }: ArchivalControllerProps) {
 
       <StudyModal isOpen={isStudyOpen} onClose={() => setIsStudyOpen(false)} isMidnight={isMidnight} />
       <EchoModal isOpen={isEchoOpen} onClose={() => setIsEchoOpen(false)} onReSummon={onReSummon} isMidnight={isMidnight} />
-      <GuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} isMidnight={isMidnight} />
+      <GuideModal isOpen={isGuideOpen} onClose={closeGuide} isMidnight={isMidnight} />
     </>
   );
 }
 
 function StudyModal({ isOpen, onClose, isMidnight }: { isOpen: boolean; onClose: () => void; isMidnight: boolean }) {
   const { favorites } = useLuminaStore();
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => { document.body.style.overflow = "unset"; };
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -171,7 +197,7 @@ function StudyModal({ isOpen, onClose, isMidnight }: { isOpen: boolean; onClose:
           animate={{ opacity: 1, x: 0 }} 
           exit={{ opacity: 0, x: 50 }} 
           className={cn(
-            "fixed top-0 right-0 h-full w-full md:w-[500px] z-[200] backdrop-blur-2xl border-l shadow-2xl p-10 flex flex-col",
+            "fixed top-4 right-4 bottom-4 w-full md:w-[500px] z-[200] backdrop-blur-2xl border shadow-2xl p-10 flex flex-col rounded-[32px]",
             isMidnight ? "bg-indigo-950/90 border-white/5" : "bg-white/95 border-[#1A1A1A]/10"
           )}
         >
@@ -206,6 +232,16 @@ function StudyModal({ isOpen, onClose, isMidnight }: { isOpen: boolean; onClose:
 
 function EchoModal({ isOpen, onClose, onReSummon, isMidnight }: { isOpen: boolean; onClose: () => void; onReSummon: (h: SummoningHistory) => void; isMidnight: boolean }) {
   const { history, clearHistory } = useLuminaStore();
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => { document.body.style.overflow = "unset"; };
+  }, [isOpen]);
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -214,7 +250,7 @@ function EchoModal({ isOpen, onClose, onReSummon, isMidnight }: { isOpen: boolea
           animate={{ opacity: 1, x: 0 }} 
           exit={{ opacity: 0, x: -50 }} 
           className={cn(
-            "fixed top-0 left-0 h-full w-full md:w-[400px] z-[200] backdrop-blur-2xl border-r shadow-2xl p-10 flex flex-col",
+            "fixed top-4 left-4 bottom-4 w-full md:w-[400px] z-[200] backdrop-blur-2xl border shadow-2xl p-10 flex flex-col rounded-[32px]",
             isMidnight ? "bg-indigo-950/90 border-white/5" : "bg-white/90 border-[#1A1A1A]/10"
           )}
         >
@@ -243,6 +279,15 @@ function EchoModal({ isOpen, onClose, onReSummon, isMidnight }: { isOpen: boolea
 }
 
 function GuideModal({ isOpen, onClose, isMidnight }: { isOpen: boolean; onClose: () => void; isMidnight: boolean }) {
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => { document.body.style.overflow = "unset"; };
+  }, [isOpen]);
+
   const steps = [
     {
       title: "Choose Your Path",
@@ -256,13 +301,18 @@ function GuideModal({ isOpen, onClose, isMidnight }: { isOpen: boolean; onClose:
     },
     {
       title: "Build Your Collection",
-      desc: "Click the heart on any book to save it to your 'Private Study'.",
+      desc: "Click the bookmark on any book to save it to your 'Private Study'.",
       icon: <Books size={24} />
     },
     {
       title: "The Restricted Section",
       desc: "A hidden portal for specialized archival requests.",
-      icon: <Sun size={24} />
+      icon: <LockKey size={24} />
+    },
+    {
+      title: "Summoning Failures",
+      desc: "If a book doesn't come up on the first try, it may be due to API rate limiting. Please try again.",
+      icon: <ClockCounterClockwise size={24} />
     }
   ];
 
@@ -282,7 +332,7 @@ function GuideModal({ isOpen, onClose, isMidnight }: { isOpen: boolean; onClose:
             animate={{ opacity: 1, scale: 1, y: 0 }} 
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className={cn(
-              "relative w-full max-w-lg p-10 rounded-[32px] border shadow-2xl",
+              "relative w-full max-w-lg max-h-[85vh] overflow-y-auto p-10 rounded-[32px] border shadow-2xl custom-scrollbar",
               isMidnight ? "bg-indigo-950 border-white/10 text-white" : "bg-[#F5F2ED] border-black/5 text-[#1A1A1A]"
             )}
           >

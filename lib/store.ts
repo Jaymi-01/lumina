@@ -30,6 +30,9 @@ interface LuminaState {
   
   isMidnight: boolean;
   toggleMidnight: () => void;
+  
+  hasSeenGuide: boolean;
+  setHasSeenGuide: (val: boolean) => void;
 }
 
 export const useLuminaStore = create<LuminaState>()(
@@ -61,10 +64,18 @@ export const useLuminaStore = create<LuminaState>()(
 
       isMidnight: false,
       toggleMidnight: () => set((state) => ({ isMidnight: !state.isMidnight })),
+
+      hasSeenGuide: false,
+      setHasSeenGuide: (val) => set({ hasSeenGuide: val }),
     }),
     {
       name: "lumina-storage",
-      partialize: (state) => ({ favorites: state.favorites, history: state.history, isMidnight: state.isMidnight }),
+      partialize: (state) => ({ 
+        favorites: state.favorites, 
+        history: state.history, 
+        isMidnight: state.isMidnight,
+        hasSeenGuide: state.hasSeenGuide 
+      }),
     }
   )
 );
